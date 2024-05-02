@@ -20,7 +20,7 @@ Versions not listed here may or may not work.
 
 == Java
 
-A Java version between 8 and 22 is required to execute Gradle.
+A Java version between 8 and 23 is required to execute Gradle.
 Java 23 and later versions are not yet supported.
 
 Java 6 and 7 can be used for <<building_java_projects.adoc#sec:java_cross_compilation,compilation>> but are deprecated for use with testing.
@@ -51,7 +51,8 @@ See the table below for the Java version supported by a specific Gradle release:
 | 20| 8.1 | 8.3
 | 21| 8.4 | 8.5
 | 22| 8.7 | 8.8
-| 23| N/A | N/A
+| 23| 8.10 | 8.10
+| 24| N/A | N/A
 |===
 
 [[kotlin]]
