@@ -23,6 +23,8 @@ import org.gradle.api.internal.DocumentationRegistry;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.logging.configuration.LoggingConfiguration;
 import org.gradle.api.logging.configuration.ShowStacktrace;
+import org.gradle.api.problems.ProblemCollectingFailure;
+import org.gradle.api.problems.internal.Problem;
 import org.gradle.execution.MultipleBuildFailures;
 import org.gradle.initialization.BuildClientMetaData;
 import org.gradle.internal.enterprise.core.GradleEnterprisePluginManager;
@@ -43,6 +45,7 @@ import org.gradle.util.internal.GUtil;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayDeque;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Queue;
@@ -179,6 +182,8 @@ public class BuildExceptionReporter implements Action<Throwable> {
 
         if (failure instanceof ContextAwareException) {
             ((ContextAwareException) failure).accept(new ExceptionFormattingVisitor(details));
+        } else if (failure instanceof ProblemCollectingFailure) {
+            Collection<Problem> reportedProblems = failure
         } else {
             details.appendDetails();
         }

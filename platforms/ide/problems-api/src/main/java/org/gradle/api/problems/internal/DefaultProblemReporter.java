@@ -43,10 +43,12 @@ public class DefaultProblemReporter implements InternalProblemReporter {
     }
 
     @Override
-    public void reporting(Action<ProblemSpec> spec) {
+    public Problem reporting(Action<ProblemSpec> spec) {
         DefaultProblemBuilder problemBuilder = new DefaultProblemBuilder(problemStream);
         spec.execute(problemBuilder);
-        report(problemBuilder.build());
+        Problem problem = problemBuilder.build();
+        report(problem);
+        return problem;
     }
 
     @Override
