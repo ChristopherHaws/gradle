@@ -18,12 +18,8 @@ package org.gradle.api.problems;
 
 import org.gradle.api.problems.internal.Problem;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 
 public interface ProblemCollectingFailure {
-
-    @Nullable
     Collection<Problem> getProblems();
-
 }

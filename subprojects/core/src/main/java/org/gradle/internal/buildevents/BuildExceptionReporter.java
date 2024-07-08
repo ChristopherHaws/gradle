@@ -16,7 +16,6 @@
 package org.gradle.internal.buildevents;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.commons.lang.StringUtils;
 import org.gradle.BuildResult;
 import org.gradle.api.Action;
 import org.gradle.api.internal.DocumentationRegistry;
@@ -30,7 +29,6 @@ import org.gradle.initialization.BuildClientMetaData;
 import org.gradle.internal.enterprise.core.GradleEnterprisePluginManager;
 import org.gradle.internal.exceptions.CompilationFailedIndicator;
 import org.gradle.internal.exceptions.ContextAwareException;
-import org.gradle.internal.exceptions.ExceptionContextVisitor;
 import org.gradle.internal.exceptions.FailureResolutionAware;
 import org.gradle.internal.exceptions.MultiCauseException;
 import org.gradle.internal.exceptions.NonGradleCause;
@@ -38,19 +36,16 @@ import org.gradle.internal.exceptions.NonGradleCauseExceptionsHolder;
 import org.gradle.internal.exceptions.ResolutionProvider;
 import org.gradle.internal.exceptions.StyledException;
 import org.gradle.internal.logging.text.BufferingStyledTextOutput;
-import org.gradle.internal.logging.text.LinePrefixingStyledTextOutput;
 import org.gradle.internal.logging.text.StyledTextOutput;
 import org.gradle.internal.logging.text.StyledTextOutputFactory;
+import org.gradle.problems.internal.rendering.ProblemRenderer;
 import org.gradle.util.internal.GUtil;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayDeque;
-import java.util.Collection;
-import java.util.HashSet;
+import java.io.StringWriter;
 import java.util.List;
-import java.util.Queue;
-import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static java.lang.String.join;
 import static org.apache.commons.lang.StringUtils.repeat;
@@ -181,9 +176,9 @@ public class BuildExceptionReporter implements Action<Throwable> {
         fillInFailureResolution(details);
 
         if (failure instanceof ContextAwareException) {
-            ((ContextAwareException) failure).accept(new ExceptionFormattingVisitor(details));
-        } else if (failure instanceof ProblemCollectingFailure) {
-            Collection<Problem> reportedProblems = failure
+            ContextAwareException contextAwareException = (ContextAwareException) failure;
+            String report = reportProblems(contextAwareException.getReportableCauses());
+            details.details.text(report);
         } else {
             details.appendDetails();
         }
@@ -191,115 +186,18 @@ public class BuildExceptionReporter implements Action<Throwable> {
         return details;
     }
 
-    private static class ExceptionFormattingVisitor extends ExceptionContextVisitor {
-        private final FailureDetails failureDetails;
+    private String reportProblems(List<Throwable> causes) {
+        final StringWriter writer = new StringWriter();
+        final ProblemRenderer problemRenderer = new ProblemRenderer(writer);
 
-        private final Set<Throwable> printedNodes = new HashSet<>();
-        private int depth;
-        private int suppressedDuplicateBranchCount;
+        List<Problem> problems = causes.stream()
+            .filter(f -> ProblemCollectingFailure.class.isAssignableFrom(f.getClass()))
+            .flatMap(f -> ((ProblemCollectingFailure) f).getProblems().stream())
+            .collect(Collectors.toList());
 
-        private ExceptionFormattingVisitor(FailureDetails failureDetails) {
-            this.failureDetails = failureDetails;
-        }
+        problemRenderer.render(problems);
 
-        @Override
-        protected void visitCause(Throwable cause) {
-            failureDetails.failure = cause;
-            failureDetails.appendDetails();
-        }
-
-        @Override
-        protected void visitLocation(String location) {
-            failureDetails.location.text(location);
-        }
-
-        @Override
-        public void node(Throwable node) {
-            if (shouldBePrinted(node)) {
-                printedNodes.add(node);
-                if (null == node.getCause() || isUsefulMessage(getMessage(node))) {
-                    LinePrefixingStyledTextOutput output = getLinePrefixingStyledTextOutput(failureDetails);
-                    renderStyledError(node, output);
-                }
-            } else {
-                // Only increment the suppressed branch count for the ultimate cause of the failure, which has no cause itself
-                if (node.getCause() == null) {
-                    suppressedDuplicateBranchCount++;
-                }
-            }
-        }
-
-        /**
-         * Determines if the given node should be printed.
-         *
-         * A node should be printed iff it is not in the {@link #printedNodes} set, and it is not a
-         * transitive cause of a node that is in the set.  Direct causes will be checked, as well
-         * as each branch of {@link ContextAwareException#getReportableCauses()}s for nodes of that type.
-         *
-         * @param node the node to check
-         * @return {@code true} if the node should be printed; {@code false} otherwise
-         */
-        private boolean shouldBePrinted(Throwable node) {
-            if (printedNodes.isEmpty()) {
-                return true;
-            }
-
-            Queue<Throwable> next = new ArrayDeque<>();
-            next.add(node);
-
-            while (!next.isEmpty()) {
-                Throwable curr = next.poll();
-                if (printedNodes.contains(curr)) {
-                    return false;
-                } else {
-                    if (curr.getCause() != null) {
-                        next.add(curr.getCause());
-                    }
-                    if (curr instanceof ContextAwareException) {
-                        next.addAll(((ContextAwareException) curr).getReportableCauses());
-                    }
-                }
-            }
-
-            return true;
-        }
-
-        private boolean isUsefulMessage(String message) {
-            return StringUtils.isNotBlank(message) && !message.endsWith(NO_ERROR_MESSAGE_INDICATOR);
-        }
-
-        @Override
-        public void startChildren() {
-            depth++;
-        }
-
-        @Override
-        public void endChildren() {
-            depth--;
-        }
-
-        private LinePrefixingStyledTextOutput getLinePrefixingStyledTextOutput(FailureDetails details) {
-            details.details.format("%n");
-            StringBuilder prefix = new StringBuilder(repeat("   ", depth - 1));
-            details.details.text(prefix);
-            prefix.append("  ");
-            details.details.style(Info).text(RESOLUTION_LINE_PREFIX).style(Normal);
-
-            return new LinePrefixingStyledTextOutput(details.details, prefix, false);
-        }
-
-        @Override
-        protected void endVisiting() {
-            if (suppressedDuplicateBranchCount > 0) {
-                LinePrefixingStyledTextOutput output = getLinePrefixingStyledTextOutput(failureDetails);
-                boolean plural = suppressedDuplicateBranchCount > 1;
-                if (plural) {
-                    output.append(String.format("There are %d more failures with identical causes.", suppressedDuplicateBranchCount));
-                } else {
-                    output.append("There is 1 more failure with an identical cause.");
-                }
-            }
-        }
+        return writer.toString();
     }
 
     private void fillInFailureResolution(FailureDetails details) {

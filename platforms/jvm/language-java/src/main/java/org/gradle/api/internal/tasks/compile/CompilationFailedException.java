@@ -17,34 +17,31 @@ package org.gradle.api.internal.tasks.compile;
 
 import org.gradle.api.problems.ProblemCollectingFailure;
 import org.gradle.api.problems.internal.Problem;
-import org.gradle.internal.exceptions.CompilationFailedIndicator;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Optional;
 
-public class CompilationFailedException extends RuntimeException implements CompilationFailedIndicator, ProblemCollectingFailure {
+public class CompilationFailedException extends RuntimeException implements ProblemCollectingFailure {
 
     private final ApiCompilerResult compilerPartialResult;
-
-    @Nullable
     private final Collection<Problem> reportedProblems;
 
     public CompilationFailedException(int exitCode) {
         super(String.format("Compilation failed with exit code %d; see the compiler error output for details.", exitCode));
         this.compilerPartialResult = null;
-        this.reportedProblems = null;
+        this.reportedProblems = Collections.emptyList();
     }
 
     public CompilationFailedException(Throwable cause) {
         super(cause);
         this.compilerPartialResult = null;
-        this.reportedProblems = null;
+        this.reportedProblems = Collections.emptyList();
     }
 
     public CompilationFailedException(ApiCompilerResult result) {
         this.compilerPartialResult = result;
-        this.reportedProblems = null;
+        this.reportedProblems = Collections.emptyList();
     }
 
     public CompilationFailedException(ApiCompilerResult result, Collection<Problem> reportedProblems) {
