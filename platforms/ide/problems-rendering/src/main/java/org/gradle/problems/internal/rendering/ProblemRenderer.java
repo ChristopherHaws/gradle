@@ -16,7 +16,6 @@
 
 package org.gradle.problems.internal.rendering;
 
-import org.gradle.api.problems.ProblemGroup;
 import org.gradle.api.problems.ProblemId;
 import org.gradle.api.problems.internal.GeneralData;
 import org.gradle.api.problems.internal.Problem;
@@ -56,32 +55,16 @@ public class ProblemRenderer {
 
     private void renderSingleProblemGroup(ProblemId id, List<Problem> groupedProblems) {
         output.printf(
-            "%s (%s)%n", id.getDisplayName(), getFullProblemId(id)
+            "%s (%s)%n", id.getDisplayName(), id
         );
         groupedProblems.forEach(this::renderSingleProblem);
     }
 
     private void renderSingleProblem(Problem problem) {
-//        output.printf(
-//            "  %s%n", problem.getContextualLabel()
-//        );
         String formattedMessage = ((GeneralData) problem.getAdditionalData()).getAsMap().get("formatted");
         for (String line : formattedMessage.split("\n")) {
             output.printf("  %s%n", line);
         }
-    }
-
-    private static String getFullProblemId(ProblemId problemId) {
-        List<String> components = new ArrayList<>();
-        components.add(problemId.getName());
-        ProblemGroup parent = problemId.getGroup();
-        while (parent != null) {
-            components.add(parent.getName());
-            parent = parent.getParent();
-        }
-
-        Collections.reverse(components);
-        return String.join(".", components);
     }
 
 }
