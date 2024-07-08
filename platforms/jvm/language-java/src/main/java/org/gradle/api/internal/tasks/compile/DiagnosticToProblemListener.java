@@ -179,9 +179,14 @@ public class DiagnosticToProblemListener implements DiagnosticListener<JavaFileO
     }
 
     private static void addDetails(ProblemSpec spec, Diagnostic<? extends JavaFileObject> diagnostic) {
-        String diagnosticMessage = diagnostic.getMessage(Locale.getDefault());
-        if (diagnosticMessage != null) {
-            spec.details(diagnosticMessage);
+        String message = diagnostic.getMessage(Locale.getDefault());
+        String[] messageLines = message.split("\n");
+
+        // Contextual label is always the first line of the message
+        spec.contextualLabel(messageLines[0]);
+        // If we have some multi-line messages (see compiler.java), we can add the complete message as details
+        if (messageLines.length > 1) {
+            spec.details(message);
         }
     }
 
