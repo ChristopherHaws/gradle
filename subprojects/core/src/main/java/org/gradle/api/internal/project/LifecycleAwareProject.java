@@ -42,7 +42,7 @@ public class LifecycleAwareProject extends MutableStateAccessAwareProject {
 
     private final EagerLifecycleExecutor eagerLifecycleExecutor;
 
-    LifecycleAwareProject(ProjectInternal delegate, EagerLifecycleExecutor eagerLifecycleExecutor) {
+    public LifecycleAwareProject(ProjectInternal delegate, EagerLifecycleExecutor eagerLifecycleExecutor) {
         super(delegate);
         this.eagerLifecycleExecutor = eagerLifecycleExecutor;
     }
