@@ -71,7 +71,6 @@ import org.gradle.configuration.project.ProjectConfigurationActionContainer;
 import org.gradle.groovy.scripts.ScriptSource;
 import org.gradle.internal.accesscontrol.AllowUsingApiForExternalUse;
 import org.gradle.internal.logging.StandardOutputCapture;
-import org.gradle.internal.metaobject.BeanDynamicObject;
 import org.gradle.internal.metaobject.DynamicObject;
 import org.gradle.internal.model.ModelContainer;
 import org.gradle.internal.model.RuleBasedPluginListener;
@@ -101,7 +100,7 @@ public abstract class MutableStateAccessAwareProject implements ProjectInternal,
 
     protected MutableStateAccessAwareProject(ProjectInternal delegate) {
         this.delegate = delegate;
-        this.dynamicObject = new BeanDynamicObject(this, Project.class);
+        this.dynamicObject = new HasPropertyMissingDynamicObject(this, Project.class, this::hasPropertyMissing);
     }
 
     protected abstract void onMutableStateAccess(String what);
@@ -119,6 +118,8 @@ public abstract class MutableStateAccessAwareProject implements ProjectInternal,
     @Nullable
     @SuppressWarnings("unused") // used by Groovy dynamic dispatch
     protected abstract Object methodMissing(String name, Object args);
+
+    protected abstract boolean hasPropertyMissing(String name);
 
     @Override
     public DynamicObject getAsDynamicObject() {
