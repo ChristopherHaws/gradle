@@ -24,6 +24,7 @@ import javax.annotation.Nullable;
 import java.io.File;
 import java.nio.file.Path;
 import java.text.MessageFormat;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
 
@@ -102,9 +103,7 @@ public interface JvmInstallationMetadata {
 
     String getDisplayName();
 
-    boolean hasCapability(JavaInstallationCapability capability);
-
-    boolean hasAllCapabilities(Set<JavaInstallationCapability> capabilities);
+    Set<JavaInstallationCapability> getCapabilities();
 
     String getErrorMessage();
 
@@ -218,7 +217,7 @@ public interface JvmInstallationMetadata {
         }
 
         private String determineInstallationType(String vendor) {
-            if (hasCapability(JavaInstallationCapability.JAVA_COMPILER)) {
+            if (getCapabilities().contains(JavaInstallationCapability.JAVA_COMPILER)) {
                 if (!vendor.toLowerCase().contains("jdk")) {
                     return " JDK";
                 }
@@ -228,13 +227,8 @@ public interface JvmInstallationMetadata {
         }
 
         @Override
-        public boolean hasCapability(JavaInstallationCapability capability) {
-            return capabilities.get().contains(capability);
-        }
-
-        @Override
-        public boolean hasAllCapabilities(Set<JavaInstallationCapability> capabilities) {
-            return this.capabilities.get().containsAll(capabilities);
+        public Set<JavaInstallationCapability> getCapabilities() {
+            return capabilities.get();
         }
 
         private Set<JavaInstallationCapability> gatherCapabilities() {
@@ -356,13 +350,8 @@ public interface JvmInstallationMetadata {
         }
 
         @Override
-        public boolean hasCapability(JavaInstallationCapability capability) {
-            return false;
-        }
-
-        @Override
-        public boolean hasAllCapabilities(Set<JavaInstallationCapability> capabilities) {
-            return false;
+        public Set<JavaInstallationCapability> getCapabilities() {
+            return Collections.emptySet();
         }
 
         private UnsupportedOperationException unsupportedOperation() {

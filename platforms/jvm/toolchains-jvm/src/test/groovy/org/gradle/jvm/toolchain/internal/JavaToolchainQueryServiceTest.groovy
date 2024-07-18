@@ -158,7 +158,7 @@ class JavaToolchainQueryServiceTest extends Specification {
 
     def "uses jdk if requested via capabilities = #capabilities"() {
         given:
-        def queryService = setupInstallations(["8.0", "8.0.242.hs-adpt", "7.9", "7.7", "14.0.2+12", "8.0.1.jdk"])
+        def queryService = setupInstallations(["8.0.jre", "8.0.242.jre.hs-adpt", "7.9.jre", "7.7.jre", "14.0.2+12.jre", "8.0.1.jdk"])
 
         when:
         def filter = createSpec()
@@ -179,7 +179,7 @@ class JavaToolchainQueryServiceTest extends Specification {
 
     def "fails when no jdk is present and requested capabilities = #capabilities"() {
         given:
-        def queryService = setupInstallations(["8.0", "8.0.242.hs-adpt", "7.9", "7.7", "14.0.2+12"])
+        def queryService = setupInstallations(["8.0.jre", "8.0.242.jre", "7.9.jre", "7.7.jre", "14.0.2+12.jre"])
 
         when:
         def filter = createSpec()
@@ -556,21 +556,16 @@ class JavaToolchainQueryServiceTest extends Specification {
             }
 
             @Override
-            boolean hasCapability(JavaInstallationCapability capability) {
-                if (capability == J9_VIRTUAL_MACHINE) {
-                    String name = location.name
-                    return name.contains("j9")
+            Set<JavaInstallationCapability> getCapabilities() {
+                def capabilities = EnumSet.noneOf(JavaInstallationCapability)
+                if (location.name.contains("jdk")) {
+                    capabilities.add(JAVA_COMPILER)
+                    capabilities.add(JAVADOC_TOOL)
                 }
-                if (capability == JAVA_COMPILER || capability == JAVADOC_TOOL) {
-                    String name = location.name
-                    return name.contains("jdk")
+                if (location.name.contains("j9")) {
+                    capabilities.add(J9_VIRTUAL_MACHINE)
                 }
-                return false
-            }
-
-            @Override
-            boolean hasAllCapabilities(Set<JavaInstallationCapability> capabilities) {
-                return capabilities.every { hasCapability(it) }
+                return capabilities
             }
 
             @Override
