@@ -24,6 +24,9 @@ import org.gradle.api.invocation.Gradle
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.logging.configuration.LoggingConfiguration
 import org.gradle.api.logging.configuration.ShowStacktrace
+import org.gradle.api.problems.ProblemCollectingFailure
+import org.gradle.api.problems.internal.DefaultProblemBuilder
+import org.gradle.api.problems.internal.Problem
 import org.gradle.api.tasks.TaskExecutionException
 import org.gradle.execution.MultipleBuildFailures
 import org.gradle.initialization.BuildClientMetaData
@@ -417,8 +420,8 @@ org.gradle.api.GradleException: $MESSAGE
         def exception = new TestException() {
             @Override
             void appendResolutions(FailureResolutionAware.Context context) {
-                context.appendResolution { output -> output.append("resolution 1.")}
-                context.appendResolution { output -> output.append("resolution 2.")}
+                context.appendResolution { output -> output.append("resolution 1.") }
+                context.appendResolution { output -> output.append("resolution 2.") }
             }
         }
 
@@ -445,7 +448,7 @@ $GET_HELP
             @Override
             void appendResolutions(FailureResolutionAware.Context context) {
                 context.doNotSuggestResolutionsThatRequireBuildDefinition()
-                context.appendResolution { output -> output.append("resolution 1.")}
+                context.appendResolution { output -> output.append("resolution 1.") }
             }
         }
 
@@ -596,6 +599,37 @@ $GET_HELP
     }
     // endregion Duplicate Exception Branch Filtering
 
+    def "problem container exceptions are rendered"() {
+        given:
+        def problem1 = new DefaultProblemBuilder()
+            .id("group-1", "Group 1")
+            .build()
+        def problem2 = new DefaultProblemBuilder()
+            .id("group-2", "Group 2")
+            .build()
+        def failure = new ContextAwareException(
+            new GradleException(
+                MESSAGE,
+                new TestProblemCollectingFailure(problem1, problem2)
+            )
+        )
+
+        when:
+        reporter.buildFinished(result(failure))
+
+        then:
+        output.value.contains(
+"""\
+* What went wrong:
+Group 2 (generic:group-2)
+  Group 2
+Group 1 (generic:group-1)
+  Group 1
+"""
+        )
+        println output.value
+    }
+
     def result(Throwable failure) {
         BuildResult result = Mock()
         result.failure >> failure
@@ -607,4 +641,19 @@ $GET_HELP
             super(MESSAGE)
         }
     }
+
+    class TestProblemCollectingFailure extends Throwable implements ProblemCollectingFailure {
+        List<Problem> problems
+
+        TestProblemCollectingFailure(Problem... problems) {
+            super(MESSAGE)
+            this.problems = Arrays.asList(problems)
+        }
+
+        @Override
+        Collection<Problem> getProblems() {
+            return problems
+        }
+    }
+
 }

@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class ProblemRenderer {
 
@@ -61,9 +62,31 @@ public class ProblemRenderer {
     }
 
     private void renderSingleProblem(Problem problem) {
-        String formattedMessage = ((GeneralData) problem.getAdditionalData()).getAsMap().get("formatted");
-        for (String line : formattedMessage.split("\n")) {
-            output.printf("  %s%n", line);
+        Map<String, String> additionalData = Optional.ofNullable(problem.getAdditionalData())
+            .map(GeneralData.class::cast)
+            .map(GeneralData::getAsMap)
+            .orElse(Collections.emptyMap());
+
+        if (additionalData.containsKey("formatted")) {
+            printMultiline(additionalData.get("formatted"), 1);
+        } else {
+            if (problem.getContextualLabel() != null) {
+                printMultiline(problem.getContextualLabel(), 1);
+            } else {
+                printMultiline(problem.getDefinition().getId().getDisplayName(), 1);
+            }
+            if (problem.getDetails() != null) {
+                printMultiline(problem.getDetails(), 2);
+            }
+        }
+    }
+
+    private void printMultiline(String message, int level) {
+        for (String line : message.split("\n")) {
+            for (int i = 0; i < level; i++) {
+                output.print("  ");
+            }
+            output.printf("%s%n", line);
         }
     }
 

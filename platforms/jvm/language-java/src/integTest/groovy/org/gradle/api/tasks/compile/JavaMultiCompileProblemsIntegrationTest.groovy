@@ -41,19 +41,25 @@ class JavaMultiCompileProblemsIntegrationTest extends AbstractIntegrationSpec {
         """
         def project1ProblematicTestGenerator = new ProblematicClassGenerator(project1Dir)
         project1ProblematicTestGenerator.addError()
+        project1ProblematicTestGenerator.save()
 
         def project2Dir = file("project2").createDir()
         project2Dir.file("build.gradle") << """
             apply plugin: 'java'
         """
-        def project2ProblematicTestGenerator = new ProblematicClassGenerator(project2Dir)
-        project2ProblematicTestGenerator.addError()
+        def project2ProblematicTestGeneratorFoo = new ProblematicClassGenerator(project2Dir, "Foo")
+        project2ProblematicTestGeneratorFoo.addError()
+        project2ProblematicTestGeneratorFoo.save()
+        def project2ProblematicTestGeneratorBar = new ProblematicClassGenerator(project2Dir, "Bar")
+        project2ProblematicTestGeneratorBar.addWarning()
+        project2ProblematicTestGeneratorBar.save()
 
         when:
         fails("compileJava", "--continue")
 
         then:
-        collectedProblems.size() == 4
+        // Total 2 problems, 1 per project
+        collectedProblems.size() == 2
     }
 
 }

@@ -186,7 +186,7 @@ public class BuildExceptionReporter implements Action<Throwable> {
         return details;
     }
 
-    private String reportProblems(List<Throwable> causes) {
+    private static String reportProblems(List<Throwable> causes) {
         final StringWriter writer = new StringWriter();
         final ProblemRenderer problemRenderer = new ProblemRenderer(writer);
 
@@ -196,7 +196,6 @@ public class BuildExceptionReporter implements Action<Throwable> {
             .collect(Collectors.toList());
 
         problemRenderer.render(problems);
-
         return writer.toString();
     }
 
