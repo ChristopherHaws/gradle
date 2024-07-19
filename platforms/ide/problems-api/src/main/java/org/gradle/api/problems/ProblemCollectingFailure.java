@@ -16,10 +16,16 @@
 
 package org.gradle.api.problems;
 
+import org.gradle.api.Incubating;
 import org.gradle.api.problems.internal.Problem;
 
 import java.util.Collection;
 
+/**
+ * If implemented on an {@link Exception}, this interface will be used to fetch and render
+ * problems specific to the exception.
+ */
+@Incubating
 public interface ProblemCollectingFailure {
     Collection<Problem> getProblems();
 }
