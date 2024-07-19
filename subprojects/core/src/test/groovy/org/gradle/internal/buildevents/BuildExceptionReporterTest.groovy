@@ -599,7 +599,7 @@ $GET_HELP
     }
     // endregion Duplicate Exception Branch Filtering
 
-    def "problem container exceptions are rendered"() {
+    def "singular exceptions containing problems are rendered"() {
         given:
         def problem1 = new DefaultProblemBuilder()
             .id("group-1", "Group 1")
@@ -619,7 +619,7 @@ $GET_HELP
 
         then:
         output.value.contains(
-"""\
+            """\
 * What went wrong:
 Group 2 (generic:group-2)
   Group 2
@@ -627,7 +627,51 @@ Group 1 (generic:group-1)
   Group 1
 """
         )
-        println output.value
+    }
+
+    def "multi-cause exceptions containing problems are rendered"() {
+        given:
+        def problem1 = new DefaultProblemBuilder()
+            .id("group-1", "Group 1")
+            .build()
+        def problem2 = new DefaultProblemBuilder()
+            .id("group-2", "Group 2")
+            .build()
+        def failure = new MultipleBuildFailures(
+            List.of(
+                new ContextAwareException(
+                    new GradleException(
+                        MESSAGE,
+                        new TestProblemCollectingFailure(problem1)
+                    )
+                ),
+                new ContextAwareException(
+                    new GradleException(
+                        MESSAGE,
+                        new TestProblemCollectingFailure(problem2)
+                    )
+                )
+            )
+        )
+
+        when:
+        reporter.buildFinished(result(failure))
+
+        then:
+        output.value.contains(
+            """\
+* What went wrong:
+Group 2 (generic:group-2)
+  Group 2
+"""
+        )
+        output.value.contains(
+            """\
+* What went wrong:
+Group 1 (generic:group-1)
+  Group 1
+"""
+        )
     }
 
     def result(Throwable failure) {
