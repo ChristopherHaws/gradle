@@ -225,7 +225,7 @@ Let's take a hypothetical project with the following structure:
 If your `settings.gradle(.kts)` looks like this:
 
 ```
-include(':subs:web:my-web-module')
+include('subs:web:my-web-module')
 ```
 
 Gradle sees a subproject with a logical project name of `:subs:web:my-web-module` and two, possibly unintentional, other subprojects logically named `:subs` and `:subs:web`.
@@ -234,8 +234,8 @@ This can lead to phantom build directories, especially when using `allprojects{}
 To avoid this, you can use:
 
 ```
-include(':my-web-module')
-project(':my-web-module').projectDir = "subs/web/my-web-module"
+include('my-web-module')
+project(':my-web-module').projectDir = file("subs/web/my-web-module")
 ```
 
 So that you only end up with a single subproject named `:my-web-module`.
